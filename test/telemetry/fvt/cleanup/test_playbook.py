@@ -17,6 +17,13 @@ Telemetry Cleanup — Playbook Execution.
 
 Test cases:
     TC_CL_001: Deploy telemetry (--tags cleanup)
+
+The ``delete_volume`` fixture (from conftest.py) controls whether PVCs
+are deleted during cleanup.  When ``--delete-volume true`` is passed
+on the pytest CLI (or ``DELETE_VOLUME=true`` is set in the environment),
+the playbook is invoked with ``-e Delete_volume=true`` so that PVCs and
+Kafka identity metadata are removed.  By default (``Delete_volume=false``),
+PVCs are preserved for safe redeployment.
 """
 
 import pytest
@@ -34,13 +41,22 @@ from library.functions import run_playbook
 @pytest.mark.deploy
 @pytest.mark.sanity
 @pytest.mark.order(0)
-def test_deploy_cleanup(host):
+def test_deploy_cleanup(host, delete_volume):
     """TC_CL_001: Deploy telemetry (--tags cleanup)."""
     tc = TC["deploy_cleanup"]
     tl = TestLogger(tc["title"], tc["id"])
 
-    tl.check("Running telemetry playbook --tags cleanup")
-    result = run_playbook(tag="cleanup")
+    extra_vars = {}
+    if delete_volume:
+        extra_vars["Delete_volume"] = "true"
+        tl.check(
+            "Running telemetry playbook --tags cleanup "
+            "-e Delete_volume=true"
+        )
+    else:
+        tl.check("Running telemetry playbook --tags cleanup")
+
+    result = run_playbook(tag="cleanup", extra_vars=extra_vars or None)
 
     if result["success"]:
         tl.passed(
