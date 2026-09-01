@@ -22,7 +22,7 @@ from the telemetry namespace.
 
 from typing import Dict, Any, List
 
-from omnia_auto import run_on_host
+from .telemetry_func import run_on_kube_vip
 
 from library.vars.common_vars import (
     CMDS,
@@ -59,7 +59,7 @@ def _get_pod_count_by_prefix(host, prefix, namespace=None):
     """
     ns = namespace or TELEMETRY_NAMESPACE
     cmd = CMDS["kubectl_get_pod_count"].format(namespace=ns, prefix=prefix)
-    result = run_on_host(host, cmd)
+    result = run_on_kube_vip(host, cmd)
     if result.rc != 0:
         return 0
     try:
@@ -83,7 +83,7 @@ def _get_resource_count(host, resource_type, namespace=None):
     cmd = CMDS["kubectl_count_resources"].format(
         resource=resource_type, namespace=ns,
     )
-    result = run_on_host(host, cmd)
+    result = run_on_kube_vip(host, cmd)
     if result.rc != 0:
         return 0
     try:

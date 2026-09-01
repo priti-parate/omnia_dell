@@ -208,8 +208,10 @@ test/telemetry/
 
 \* One of the two final-state PVC tests
 (`test_no_pvcs_after_full_cleanup` / `test_pvcs_preserved_after_cleanup`)
-is always skipped depending on the `DELETE_VOLUME` flag — only 14 run
-in any single invocation.
+is always skipped depending on the `DELETE_VOLUME` flag, and
+`test_cleanup_topics_removed` additionally skips when
+`DELETE_VOLUME` is unset/`false` (KafkaTopic CRDs are preserved in that
+mode) — so 14 run when `DELETE_VOLUME=true`, 13 run otherwise.
 
 ### NFT (Non-Functional Tests)
 
@@ -223,7 +225,7 @@ in any single invocation.
 `test_cleanup_idempotency_no_pvcs`'s two PVC assertions runs per
 invocation, based on `DELETE_VOLUME` — 4 run in any single invocation.
 
-### Grand Total: **98 Tests defined** (96 active in a single run — one PVC test in each of FVT cleanup and NFT idempotency is skipped based on `DELETE_VOLUME`)
+### Grand Total: **98 Tests defined** (95–96 active in a single run, depending on `DELETE_VOLUME` — see footnotes above)
 
 ## Output Format
 
