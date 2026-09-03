@@ -104,10 +104,23 @@ tests including TLS cert extraction and connectivity verification.
 
 ### Cleanup
 
-| TC ID | Test | Marker |
-|-------|------|--------|
-| TC_CL_002 | Verify telemetry pods removed | sanity |
-| TC_CL_003 | Verify Kafka topics removed | sanity |
+| TC ID | Test | Marker | Condition |
+|-------|------|--------|-----------|
+| TC_CL_002 | Verify telemetry pods removed | sanity | always |
+| TC_CL_003 | Verify Kafka topics removed | sanity | `DELETE_VOLUME=true` |
+| TC_CL_011 | Verify no pods remain after full cleanup | sanity | always |
+| TC_CL_012 | Verify no PVCs remain after full cleanup | sanity | `DELETE_VOLUME=true` |
+| TC_CL_013 | Verify PVCs preserved after cleanup | sanity | `DELETE_VOLUME` unset/`false` (default) |
+
+TC_CL_012 and TC_CL_013 are mutually exclusive: whichever does not match
+the current `Delete_volume` mode is skipped (not failed). See
+`status/test_cleanup_final.py` and the `delete_volume` fixture defined
+in `conftest.py`.
+
+TC_CL_003 is skipped when `DELETE_VOLUME` is unset/`false`: per
+`src/telemetry/roles/cleanup/tasks/kafka.yml`, KafkaTopic CRDs are only
+deleted when `Delete_volume=true` — otherwise topic metadata is kept
+alongside the retained Kafka PVCs.
 
 ### Playbook Execution
 
@@ -119,24 +132,34 @@ tests including TLS cert extraction and connectivity verification.
 | TC_VL_001 | Deploy telemetry (--tags validate) | validate |
 | TC_CL_001 | Deploy telemetry (--tags cleanup) | cleanup |
 
+TC_CL_001 passes `-e Delete_volume=true` to the playbook when
+`DELETE_VOLUME=true` is set in the environment; otherwise the playbook
+runs with `Delete_volume` at its default (`false`), which preserves PVCs.
+
 ## Execution
 
 ```bash
 # Verify all (except cleanup)
-./run_validation.sh telemetry verify
+./run_validation.sh fvt_telemetry verify
 
 # Verify deploy tag only
-./run_validation.sh telemetry deploy verify
+./run_validation.sh fvt_telemetry deploy verify
 
 # Exec playbook + verify
-./run_validation.sh telemetry test
+./run_validation.sh fvt_telemetry test
 
 # Exec with specific tag + verify
-./run_validation.sh telemetry deploy test
+./run_validation.sh fvt_telemetry deploy test
 
 # Sanity only
-./run_validation.sh telemetry verify --marker sanity
+./run_validation.sh fvt_telemetry verify --marker sanity
 
 # Sources only
-./run_validation.sh telemetry deploy verify --suite sources
+./run_validation.sh fvt_telemetry deploy verify --suite sources
+
+# Cleanup: PVCs preserved (Delete_volume=false, default)
+./run_validation.sh fvt_telemetry cleanup test
+
+# Cleanup: PVCs deleted (Delete_volume=true)
+DELETE_VOLUME=true ./run_validation.sh fvt_telemetry cleanup test
 ```
